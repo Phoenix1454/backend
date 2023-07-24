@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lead Management Software</title>
+    <style>
+        /* styles.css */
+
+/* Body styles */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+/* Header styles */
+h1 {
+    background-color: #4CAF50;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+}
+
+/* Form styles */
+form {
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    max-width: 400px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+}
+
+button[type="submit"] {
+    background-color: #4CAF50;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+}
+
+button[type="submit"]:hover {
+    background-color: #45a049;
+}
+
+/* Leads container styles */
+#leadsContainer {
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+}
+
+#leadsContainer div {
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
+}
+
+/* CSV upload section styles */
+#csvForm {
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    max-width: 400px;
+}
+
+/* Additional styles */
+h2 {
+    margin: 20px 0;
+    padding: 0;
+}
+#parent{
+    padding:20px;
+    display: flex;
+    flex-direction:row;
+    justify-content: space-between;
+
+}
+
+    </style>
+</head>
+<body>
+   
+        
+    <h1>Lead Management Software</h1>
+    <div id="parent">
+        <div id="lead-form">
+    <form id="leadForm">
+        <label for="name">Name:</label>
+        <input type="text" id="name" required><br>
+        <label for="phone_number">Phone Number:</label>
+        <input type="text" id="phone_number" required><br>
+        <label for="teacher">Teacher:</label>
+        <input type="text" id="teacher" required/>
+        <label for="month_year">Month/Year:</label>
+
+        <input type="month" id="month_year"><br>
+        <button type="submit">Add Lead</button>
+    </form>
+    <div>
+        <h2>Upload Leads via CSV</h2>
+        <form id="csvForm" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".csv" required>
+            <button type="submit">Upload CSV</button>
+        </form>
+        <div id="responseMessage"></div> <!-- Display the response message here -->
+        <div id="leadsContainer"></div>
+        
+    </div>
+</div>
+    <div id="csv-download">
+    <h2>Filter Leads and Download CSV</h2>
+    <form id="filterForm">
+        <label for="filterMonthYear">Filter by Month/Year:</label>
+        <input type="month" id="filterMonthYear">
+        <label for="filterTeacher">Filter by Teacher:</label>
+        <input type="text" id="filterTeacher">
+        <button type="button" onclick="filterAndDownload()">Download CSV</button>
+    </form>
+    <div id="downloadResponseMessage"></div>
+
+</div>
+</div>
+    <script>
+        // Function to fetch leads and display them on the page
+
+
+        // Function to handle form submission and add a new lead
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const name = document.getElementById('name').value;
+            const phone_number = document.getElementById('phone_number').value;
+            const month_year = document.getElementById('month_year').value;
+            const teacher = document.getElementById('teacher').value;
+
+
+            fetch('/api/add_lead', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, phone_number, month_year,teacher})
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('data',data)
+                    alert(data.message);
+                    document.getElementById('leadForm').reset();
+                    const leadsContainer = document.getElementById('leadsContainer');
+                    
+                    leadsContainer.innerHTML = '';
+
+                    leadsContainer.innerHTML += `
+                            <div>
+                                <p>Created 1 row!
+                            </div>
+                        `;
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Function to handle CSV file upload
+        function handleCSVUpload(event) {
+            event.preventDefault();
+            const formData = new FormData(); // Create a new FormData object
+
+            // Get the selected CSV file from the input element
+            const fileInput = document.querySelector('input[type="file"]');
+            const file = fileInput.files[0];
+
+            formData.append('file', file); // Append the file to the FormData object
+
+            // Use fetch API to send the file
+            fetch('/api/add_leads_csv', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Display the response message
+                    console.log(data)
+                    alert(data.message);
+                    const responseMessage = document.getElementById('responseMessage');
+                    responseMessage.textContent = data.message;
+                    responseMessage.style.color = data.error ? 'red' : 'green';
+
+                    document.getElementById('csvForm').reset();
+
+                    const leadsContainer = document.getElementById('leadsContainer');
+                    leadsContainer.innerHTML = '';
+
+                    leadsContainer.innerHTML += `
+                            <div>
+                                <p>Updated ${data.count} rows
+                            </div>
+                        `;
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Attach the handleFormSubmit function to the form's submit event
+        document.getElementById('leadForm').addEventListener('submit', handleFormSubmit);
+
+        // Attach the handleCSVUpload function to the CSV upload form's submit event
+        document.getElementById('csvForm').addEventListener('submit', handleCSVUpload);
+
+        // Fetch leads when the page loads to display any existing leads
+        //fetchLeads();
+        function filterAndDownload() {
+            const filterMonthYear = document.getElementById('filterMonthYear').value;
+            const filterTeacher = document.getElementById('filterTeacher').value;
+    
+            // Create the download URL with filters as query parameters
+            const downloadURL = `/api/download_leads_csv?month_year=${filterMonthYear}&teacher=${filterTeacher}`;
+    
+            // Use the fetch API to trigger the download
+            fetch(downloadURL)
+                .then(response => {
+                    // Check if the download is successful (status code 200)
+                    if (response.ok) {
+                        // Display success message
+                        const downloadResponseMessage = document.getElementById('downloadResponseMessage');
+                        downloadResponseMessage.textContent = "CSV Downloaded Successfully!";
+                        downloadResponseMessage.style.color = "green";
+                    } else {
+                        // Display error message
+                        const downloadResponseMessage = document.getElementById('downloadResponseMessage');
+                        downloadResponseMessage.textContent = "Error downloading CSV!";
+                        downloadResponseMessage.style.color = "red";
+                    }
+                })
+                .catch(error => {
+                    // Display error message
+                    const downloadResponseMessage = document.getElementById('downloadResponseMessage');
+                    downloadResponseMessage.textContent = "Error downloading CSV!";
+                    downloadResponseMessage.style.color = "red";
+                });
+        }
+    </script>
+</body>
+</html>
