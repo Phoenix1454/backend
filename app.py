@@ -208,6 +208,35 @@ def get_teachers():
         return jsonify({'teachers': teachers})
     except Exception as e:
         return jsonify({'error': str(e)})
+    
+@app.route('/api/get_teacher_counts', methods=['GET'])
+def get_teacher_counts():
+    try:
+        conn = init_db()
+        cursor = conn.cursor()
+
+        # Get leads count for each teacher from the leads table
+        query_leads = "SELECT teacher, COUNT(*) FROM leads GROUP BY teacher"
+        cursor.execute(query_leads)
+        leads_counts = dict(cursor.fetchall())
+
+        # Get used leads count for each teacher from the usedLeads table
+        query_used_leads = "SELECT teacher, COUNT(*) FROM usedLeads GROUP BY teacher"
+        cursor.execute(query_used_leads)
+        used_leads_counts = dict(cursor.fetchall())
+
+        cursor.close()
+        conn.close()
+
+        # Combine the leads count and used leads count for each teacher
+        teacher_counts = {}
+        for teacher in set(list(leads_counts.keys()) + list(used_leads_counts.keys())):
+            teacher_counts[teacher] = {'leads': leads_counts.get(teacher, 0), 'used_leads': used_leads_counts.get(teacher, 0)}
+
+        return jsonify(teacher_counts)
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
 
 """ @app.route('/api/loadingpercentage',methods=['GET'])
 def fetch_Percentage():
