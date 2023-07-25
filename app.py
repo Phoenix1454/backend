@@ -91,7 +91,6 @@ def add_leads_csv():
  
 @app.route('/api/getloading', methods=['GET'])
 def getLoading():
-    print('loading ... chal rhea')
     return jsonify({'Count':count,'TotalCount':totalData})
 
 @app.route('/api/resetloading',methods=['GET'])
