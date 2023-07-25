@@ -155,8 +155,9 @@ def filter_and_download_leads():
 
         if not(teacher and month and year):
             return jsonify({"error": "Please pass all values"})
+
         # Build the SQL query with the filtering condition and LIMIT clause
-        if limit!="0":
+        if limit != "0":
             query = f"SELECT * FROM leads WHERE month = %s AND year = %s AND teacher = %s LIMIT {limit}"
         else:
             query = "SELECT * FROM leads WHERE month = %s AND year = %s AND teacher = %s"
@@ -164,6 +165,19 @@ def filter_and_download_leads():
 
         leads = cursor.fetchall()
         cursor.close()
+
+        # Insert the filtered leads into the usedLeads table
+        query = "INSERT INTO usedLeads (name, phone_number, month, year, teacher) VALUES (%s, %s, %s, %s, %s)"
+        cursor = conn.cursor()
+        for lead in leads:
+            cursor.execute(query, lead[1:])
+            conn.commit()
+
+        # Delete the filtered leads from the leads table
+        delete_query = "DELETE FROM leads WHERE month = %s AND year = %s AND teacher = %s"
+        cursor.execute(delete_query, (month, year, teacher))
+        conn.commit()
+
         conn.close()
 
         # Create a CSV string from the leads data
