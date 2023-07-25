@@ -69,11 +69,12 @@ def add_leads_csv():
             for _, row in df.iterrows():
                 conn = init_db()
                 cursor = conn.cursor()
+                year = int(row['year'])
                 phone_no=str(row['phone_number']).replace(' ','').replace('.','')
                 phone_no=phone_no[::-1][0:10]
                 phone_no=phone_no[::-1]
                 try:
-                    cursor.execute(query, (row['name'], phone_no, row['month'], row['year'], row['teacher']))
+                    cursor.execute(query, (row['name'], phone_no, row['month'], year, row['teacher']))
                     conn.commit()
                     cursor.close()
                     conn.close()
@@ -146,14 +147,20 @@ def filter_and_download_leads():
         year = request.args.get('year')
         teacher = request.args.get('teacher')
         month = months[int(month)]
-        print(month)
+        limit = request.args.get('limit')
+        print('Filter Parameters:', month, year, teacher, limit)  # Add this line to check the values
+
         conn = init_db()
         cursor = conn.cursor()
 
-        if teacher and month and year:
-            query = "SELECT * FROM leads WHERE teacher = %s AND month = %s AND year = %s"
-            cursor.execute(query, (teacher, month, year))
-        # Add more conditions for other filter combinations if needed...
+        if not(teacher and month and year):
+            return jsonify({"error": "Please pass all values"})
+        # Build the SQL query with the filtering condition and LIMIT clause
+        if limit!="0":
+            query = f"SELECT * FROM leads WHERE month = %s AND year = %s AND teacher = %s LIMIT {limit}"
+        else:
+            query = "SELECT * FROM leads WHERE month = %s AND year = %s AND teacher = %s"
+        cursor.execute(query, (month, year, teacher))
 
         leads = cursor.fetchall()
         cursor.close()
@@ -171,6 +178,7 @@ def filter_and_download_leads():
 
     except Exception as e:
         return jsonify({'error': str(e)})
+
 
 @app.route('/api/get_teachers', methods=['GET'])
 def get_teachers():
@@ -202,4 +210,4 @@ def index():
 
 if __name__ == '__main__':
     app.jinja_env.cache = {}
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
