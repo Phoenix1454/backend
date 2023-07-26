@@ -101,6 +101,7 @@ def resetloading():
     totalData=0
     return jsonify({'none':None})
 # Route to add a new lead
+# Route to add a new lead
 @app.route('/api/add_lead', methods=['POST'])
 def add_lead():
     print('added lead!', file=sys.stderr)
@@ -108,20 +109,36 @@ def add_lead():
     name = data['name']
     phone_number = data['phone_number']
     month_year = data['month_year']
-    teacher_name=data['teacher']
-    my=month_year.split('-')
-    year=my[0]
-    month=my[1]
-    month=months[int(month)]
+    teacher_name = data['teacher']
+    my = month_year.split('-')
+    year = my[0]
+    month = my[1]
+    month = months[int(month)]
+
     try:
         conn = init_db()
         cursor = conn.cursor()
-        query = "INSERT INTO leads (name, phone_number, month, year, teacher) VALUES (%s, %s, %s, %s, %s)"
-        cursor.execute(query, (name, phone_number, month, year, teacher_name))
+
+        # Check if a lead with the same phone number, month, and teacher already exists
+        query_check_duplicate = "SELECT id FROM leads WHERE phone_number = %s AND month = %s AND year = %s AND teacher = %s"
+        cursor.execute(query_check_duplicate, (phone_number, month, year, teacher_name))
+        existing_lead = cursor.fetchone()
+
+        if existing_lead:
+            # If a lead with the same attributes exists, ignore the new lead
+            cursor.close()
+            conn.close()
+            return jsonify({'message': 'Lead already exists with the same phone number, month, and teacher.'})
+
+        # Insert the new lead since it doesn't exist with the same attributes
+        query_insert = "INSERT INTO leads (name, phone_number, month, year, teacher) VALUES (%s, %s, %s, %s, %s)"
+        cursor.execute(query_insert, (name, phone_number, month, year, teacher_name))
         conn.commit()
         cursor.close()
         conn.close()
+
         return jsonify({'message': 'Lead added successfully!'})
+
     except Exception as e:
         return jsonify({'error': str(e)})
 
@@ -153,7 +170,7 @@ def filter_and_download_leads():
         conn = init_db()
         cursor = conn.cursor()
 
-        if not(teacher and month and year):
+        if not (teacher and month and year):
             return jsonify({"error": "Please pass all values"})
 
         # Build the SQL query with the filtering condition and LIMIT clause
@@ -164,21 +181,12 @@ def filter_and_download_leads():
         cursor.execute(query, (month, year, teacher))
 
         leads = cursor.fetchall()
-        cursor.close()
 
         # Insert the filtered leads into the usedLeads table
-        query = "INSERT INTO usedLeads (name, phone_number, month, year, teacher) VALUES (%s, %s, %s, %s, %s)"
-        cursor = conn.cursor()
+        query_insert = "INSERT INTO usedLeads (name, phone_number, month, year, teacher) VALUES (%s, %s, %s, %s, %s)"
         for lead in leads:
-            cursor.execute(query, lead[1:])
+            cursor.execute(query_insert, lead[1:])
             conn.commit()
-
-        # Delete the filtered leads from the leads table
-        delete_query = "DELETE FROM leads WHERE month = %s AND year = %s AND teacher = %s"
-        cursor.execute(delete_query, (month, year, teacher))
-        conn.commit()
-
-        conn.close()
 
         # Create a CSV string from the leads data
         csv_data = "Name,Phone Number,Month,Year,Teacher\n"
@@ -188,11 +196,22 @@ def filter_and_download_leads():
         # Set the appropriate headers for the CSV file download
         response = Response(csv_data, content_type='text/csv')
         response.headers['Content-Disposition'] = 'attachment; filename=filtered_leads.csv'
+
+        # Delete only the leads that are being downloaded from the leads table
+        if limit != "0":
+            delete_query = f"DELETE FROM leads WHERE month = %s AND year = %s AND teacher = %s LIMIT {limit}"
+        else:
+            delete_query = "DELETE FROM leads WHERE month = %s AND year = %s AND teacher = %s"
+        cursor.execute(delete_query, (month, year, teacher))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
         return response
 
     except Exception as e:
         return jsonify({'error': str(e)})
-
 
 @app.route('/api/get_teachers', methods=['GET'])
 def get_teachers():

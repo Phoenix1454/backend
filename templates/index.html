@@ -226,7 +226,7 @@
                         `;
                 })
                 .catch(error => console.error('Error:', error))
-                .finally(()=>fetchTeacherCounts());
+                .finally(() => fetchTeacherCounts());
         }
 
         // Function to handle CSV file upload
@@ -276,7 +276,7 @@
                     fetch('/api/resetloading')
                     return console.error('Error:', error)
                 })
-                .finally(()=>fetchTeacherCounts());
+                .finally(() => fetchTeacherCounts());
 
 
             IntervalId = setInterval(handleLoading, 500)
@@ -348,7 +348,7 @@
                     a.remove(); // Clean up after the download is initiated
                 })
                 .catch(error => console.error('Error:', error))
-                .finally(()=>fetchTeacherCounts());
+                .finally(() => fetchTeacherCounts());
         }
 
         // Function to fetch teacher-wise counts of leads from both tables
@@ -357,6 +357,13 @@
                 .then(response => response.json())
                 .then(data => {
                     const teacherLeadsCountsContainer = document.getElementById('teacherLeadsCountsContainer');
+                    teacherLeadsCountsContainer.innerHTML = `
+                    <tr>
+                        <th>Teacher</th>
+                        <th>Leads</th>
+                        <th>Used Leads</th>
+                    </tr>
+                        `
 
                     for (const teacher in data) {
                         const { leads, used_leads } = data[teacher];
