@@ -45,7 +45,7 @@
             border: 1px solid #ccc;
         }
 
-        button[type="submit"] {
+        button {
             background-color: #4CAF50;
             color: #fff;
             padding: 10px 20px;
@@ -56,7 +56,9 @@
         button[type="submit"]:hover {
             background-color: #45a049;
         }
-
+        
+        
+        
         /* Leads container styles */
         #leadsContainer {
             margin: 20px;
@@ -118,6 +120,10 @@
         #livegif {
             width: 32px;
         }
+        #btns{
+            display: flex;
+            justify-content: space-between;
+        }
     </style>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
@@ -168,13 +174,18 @@
         <div>
             <h2>Filter Leads</h2>
             <form id="filterForm">
-                <label for="filterMonth">Select Month:</label>
-                <input type="month" id="filterMonth"><br>
-                <label for="filterTeacher">Select Teacher:</label>
-                <select id="filterTeacher"></select><br>
-                <label for="limit">Limit:</label>
-                <input type="text" id="limit" value="0">
+                <label for="filterMonth" required>Select Month:</label>
+                <input type="month" id="filterMonth" required><br>
+                <label for="filterTeacher" required>Select Teacher:</label>
+                <select id="filterTeacher" required></select><br>
+                <label for="limit" required>Limit:</label>
+                <input type="text" id="limit" value="0" required>
+                <input type="text" name="" id="tags" placeholder="Tags">
+                <div id="btns">
                 <button type="submit">Filter</button>
+                <button onclick="checkIfValid()">AI Sensy</button>
+                <button onclick="checkIfValid()">Interakt</button><button>Sinch</button>
+            </div>
             </form>
         </div>
     </div>
@@ -193,6 +204,35 @@
         let progressBar = document.getElementById("progressBar")
         console.log(progressBar)
         let progressP = document.getElementById("progress")
+
+        let tags=document.getElementById('tags')
+
+        //check if tags has some value
+        function checkIfValid(){
+            if (tags.value!='') {
+                fetch(`/api/get_AiSensiFormat?tags=${tags.value}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    // Create a temporary anchor element to trigger the download
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'AiSensiLeads.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove(); // Clean up after the download is initiated
+                })
+                .catch(error => console.error('Error:', error))
+                return 
+            }
+            alert('PUt some tags in it before. Bitch !')
+
+        }
 
         // Function to handle form submission and add a new lead
         function handleFormSubmit(event) {

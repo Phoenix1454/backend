@@ -19,7 +19,7 @@ months={1:'January',2:'Feburary',3:'March',4:'April',5:'May',6:'June',7:'July',8
 # Function to initialize the database connection
 totalData=0
 count=0
-
+AiSensiData=''
 def init_db():
     return mysql.connector.connect(**db_config)
 
@@ -159,6 +159,7 @@ def get_leads():
     
 @app.route('/api/filter_and_download_leads', methods=['GET'])
 def filter_and_download_leads():
+    global AiSensiData
     try:
         month = request.args.get('month')
         year = request.args.get('year')
@@ -190,12 +191,15 @@ def filter_and_download_leads():
 
         # Create a CSV string from the leads data
         csv_data = "Name,Phone Number,Month,Year,Teacher\n"
+        AiSensiData=["Name,Phone Number,Tags"]
         for lead in leads:
             csv_data += f"{lead[1]},{lead[2]},{lead[3]},{lead[4]},{lead[5]}\n"
-
+            AiSensiData.append(f"{lead[1]},{lead[2]}")
         # Set the appropriate headers for the CSV file download
+        print("Ai Sensi Data and csvData",AiSensiData,csv_data)
         response = Response(csv_data, content_type='text/csv')
         response.headers['Content-Disposition'] = 'attachment; filename=filtered_leads.csv'
+        
 
         # Delete only the leads that are being downloaded from the leads table
         if limit != "0":
@@ -213,6 +217,22 @@ def filter_and_download_leads():
     except Exception as e:
         return jsonify({'error': str(e)})
 
+@app.route('/api/get_AiSensiFormat',methods=['GET'])
+def get_AiSensi():
+    global AiSensiData
+    # fetch the tags from the req.params
+    tags = request.args.get('tags')
+    i=0
+    correct_format="Name,Phone Number,Tags\n"
+    while(i<len(AiSensiData)):
+        if i:
+            correct_format+=f"{AiSensiData[i]},{tags}\n"
+        i+=1;
+    print('Correct Data',correct_format)
+    response = Response(correct_format, content_type='text/csv')
+    response.headers['Content-Disposition'] = 'attachment; filename=Ai_Sensi_leads.csv'
+    return response
+    
 @app.route('/api/get_teachers', methods=['GET'])
 def get_teachers():
     try:
