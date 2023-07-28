@@ -4,9 +4,12 @@ import pandas as pd
 import sys
 import io
 import time
-
+import logging
+from user_agents import parse
 
 app = Flask(__name__)
+
+
 
 # Replace these with your actual database credentials
 db_config = {
@@ -286,6 +289,30 @@ def fetch_Percentage():
         pass
     return jsonify({'message':'fdsf'})
  """
+
+# Configure the logging format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+# Custom logging middleware to log IP addresses and detailed user-agent information
+@app.before_request
+def log_request_info():
+    ip_address = request.remote_addr
+    user_agent_string = request.headers.get('User-Agent')
+    user_agent = parse(user_agent_string)
+
+    browser = user_agent.browser.family
+    browser_version = user_agent.browser.version_string
+    os = user_agent.os.family
+    os_version = user_agent.os.version_string
+    device = user_agent.device.family
+
+    logging.info(f"Request from IP: {ip_address} | Browser: {browser} {browser_version} | OS: {os} {os_version} | Device: {device} | Endpoint: {request.endpoint}")
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
