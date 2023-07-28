@@ -203,7 +203,6 @@
 
         let IntervalId;
         let progressBar = document.getElementById("progressBar")
-        console.log(progressBar)
         let progressP = document.getElementById("progress")
 
         let tags=document.getElementById('tags')
@@ -253,7 +252,6 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('data', data)
                     alert(data.message);
                     document.getElementById('leadForm').reset();
                     const leadsContainer = document.getElementById('leadsContainer');
@@ -295,7 +293,6 @@
                 })
                 .then(data => {
                     // Display  the response message
-                    console.log(data)
                     alert(data.message)
                     const responseMessage = document.getElementById('responseMessage');
                     responseMessage.textContent = data.message;
@@ -317,7 +314,10 @@
                     fetch('/api/resetloading')
                     return console.error('Error:', error)
                 })
-                .finally(() => fetchTeacherCounts());
+                .finally(() => {
+                    fetchTeacherCounts(); 
+                    clearInterval(IntervalId)
+                });
 
 
             IntervalId = setInterval(handleLoading, 500)
@@ -329,8 +329,6 @@
                 // underconstruction
                 percentage = (laoding.Count / laoding.TotalCount) * 100
                 progressBar.style.width = `${percentage}%`
-                console.log(progressBar)
-                console.log('loading data', laoding.Count, 'Total count', laoding.TotalCount)
             })
 
         }
@@ -365,7 +363,6 @@
 
         function handleFilterFormSubmit(event) {
             event.preventDefault();
-            console.log('clicked')
             const [year, month] = document.getElementById('filterMonth').value.split("-");
             const teacher = document.getElementById('filterTeacher').value;
             const limit = document.getElementById('limit').value

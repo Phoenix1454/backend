@@ -97,7 +97,7 @@ def getLoading():
 @app.route('/api/resetloading',methods=['GET'])
 def resetloading():
     global count, totalData
-    count=0;
+    count=0
     totalData=0
     return jsonify({'none':None})
 # Route to add a new lead
